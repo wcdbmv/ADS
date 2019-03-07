@@ -94,7 +94,7 @@ void BinaryHeap::SiftDown(size_t target) {
 }
 
 void BinaryHeap::Heapify() {
-  for (int target = heap_.size() / 2; target >= 0; --target)
+  for (int target = heap_.size() / 2 - 1; target >= 0; --target)
     SiftDown(target);
 }
 
