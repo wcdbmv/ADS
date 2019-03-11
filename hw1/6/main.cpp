@@ -64,7 +64,7 @@ int* Partition(int* begin, int* end) {
   return pi;
 }
 
-size_t Statistics(int* begin, int* end, size_t k) {
+int Statistics(int* begin, int* end, size_t k) {
   int* left = begin;
   int* right = end;
   while (true) {
