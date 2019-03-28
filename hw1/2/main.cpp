@@ -21,9 +21,24 @@ size_t LowerBound(const int* array, size_t n, int key) {
   return li;
 }
 
+void FindBound(const int* array, size_t n, int key, size_t* li, size_t* ri) {
+  assert(array && li && ri);
+  *li = 0;
+  *ri = n - 1;
+  for (size_t i = *li; i << 1 < *ri; ++i) {
+    const int i2 = i << 1;
+    if (array[i2] < key)
+      *li = i2;
+    else if (array[i2] > key)
+      *ri = i2;
+  }
+}
+
 size_t FindNearest(const int* array, size_t n, int key) {
   assert(array && n);
-  size_t i = LowerBound(array, n, key);
+  size_t li, ri;
+  FindBound(array, n, key, &li, &ri);
+  size_t i = li + LowerBound(array + li, ri - li + 1, key);
   if (i == 0)
     return i;
   if (i == n)
