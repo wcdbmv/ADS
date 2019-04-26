@@ -61,8 +61,9 @@ class HashTable {
   std::vector<Node*> table_;
   size_t size_;
 
-
   void Rehash();
+
+  size_t Find(const T& key) const;
 
   size_t Hash(const T& key) const;
   size_t QuadraticProbe(size_t h, size_t i) const;
@@ -79,8 +80,6 @@ class HashTable {
 
 size_t HashHorner(const std::string& key, size_t m);
 
-void PrintResult(bool ok) { std::cout << (ok ? "OK" : "FAIL") << std::endl; }
-
 int main() {
   std::ios_base::sync_with_stdio(false);
   std::cin.tie(nullptr);
@@ -89,17 +88,19 @@ int main() {
   char command;
   std::string key;
   while (std::cin >> command >> key) {
+    bool ok = false;
     switch (command) {
       case '?':
-        PrintResult(table.Has(key));
+        ok = table.Has(key);
         break;
       case '+':
-        PrintResult(table.Insert(key));
+        ok = table.Insert(key);
         break;
       case '-':
-        PrintResult(table.Remove(key));
+        ok = table.Remove(key);
         break;
     }
+    std::cout << (ok ? "OK" : "FAIL") << std::endl;
   }
 }
 
@@ -119,6 +120,22 @@ template <typename T, size_t THash(const T&, size_t)>
 HashTable<T, THash>::~HashTable() {
   for (size_t i = 0; i != table_.size(); ++i)
     delete table_[i];
+}
+
+template <typename T, size_t THash(const T&, size_t)>
+size_t HashTable<T, THash>::Find(const T& key) const {
+  size_t index = table_.size();
+  const size_t hash = Hash(key);
+  for (size_t i = 0; i != table_.size(); ++i) {
+    size_t probe = QuadraticProbe(hash, i);
+    if (!table_[probe])
+      break;
+    if (!table_[probe]->deleted && table_[probe]->key == key) {
+      index = probe;
+      break;
+    }
+  }
+  return index;
 }
 
 template <typename T, size_t THash(const T&, size_t)>
@@ -143,24 +160,8 @@ bool HashTable<T, THash>::Insert(const T& key) {
       table_[probe]->deleted = false;
       ++size_;
       return true;
-    } else if (table_[probe]->key == key)
+    } else if (table_[probe]->key == key) {
       return false;
-  }
-
-  return false;
-}
-
-template <typename T, size_t THash(const T&, size_t)>
-bool HashTable<T, THash>::Remove(const T& key) {
-  const size_t hash = Hash(key);
-  for (size_t i = 0; i != table_.size(); ++i) {
-    const size_t probe = QuadraticProbe(hash, i);
-    if (!table_[probe]) {
-      return false;
-    } else if (!table_[probe]->deleted && table_[probe]->key == key) {
-      table_[probe]->deleted = true;
-      --size_;
-      return true;
     }
   }
 
@@ -168,17 +169,18 @@ bool HashTable<T, THash>::Remove(const T& key) {
 }
 
 template <typename T, size_t THash(const T&, size_t)>
-bool HashTable<T, THash>::Has(const T& key) const {
-  const size_t hash = Hash(key);
-  for (size_t i = 0; i != table_.size(); ++i) {
-    const size_t probe = QuadraticProbe(hash, i);
-    if (!table_[probe])
-      return false;
-    if (!table_[probe]->deleted && table_[probe]->key == key)
-      return true;
-  }
+bool HashTable<T, THash>::Remove(const T& key) {
+  const size_t index = Find(key);
+  if (index == table_.size())
+    return false;
+  table_[index]->deleted = true;
+  --size_;
+  return true;
+}
 
-  return false;
+template <typename T, size_t THash(const T&, size_t)>
+bool HashTable<T, THash>::Has(const T& key) const {
+  return Find(key) != table_.size();
 }
 
 template <typename T, size_t THash(const T&, size_t)>
@@ -205,12 +207,12 @@ size_t HashTable<T, THash>::QuadraticProbe(size_t h, size_t i) const {
 
 template <typename T, size_t THash(const T&, size_t)>
 size_t HashTable<T, THash>::QuadraticProbe(size_t h, size_t i, size_t m) const {
-  return (h + (i + i * i) / 2) % m;
+  return static_cast<size_t>(h + kC1 * i + kC2 * i * i) % m;
 }
 
 size_t HashHorner(const std::string& key, size_t m) {
   size_t hash = 0;
   for (size_t i = 0; i != key.size(); ++i)
-    hash = (hash * 17 + key[i]) % m;
+    hash = (hash * 499 + key[i]) % m;
   return hash;
 }
